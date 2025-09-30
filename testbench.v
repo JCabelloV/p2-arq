@@ -1,28 +1,69 @@
 module test;
-   reg cl = 0;
-   wire [3:0] alu_out_bus;
+    reg clk = 0;
+    reg rst = 1;
 
-   computer Comp(.clk(cl), .alu_out_bus(alu_out_bus));
+    wire [7:0] alu_out_bus;
+    wire [7:0] pc_out_bus;
+    wire [15:0] instruction_bus;
+    wire [7:0] regA_out_bus;
+    wire [7:0] regB_out_bus;
+    wire [7:0] data_memory_out_bus;
+    wire zero_flag;
+    wire carry_flag;
+    wire negative_flag;
+    wire [7:0] last_opcode;
 
-   initial begin
-     $dumpfile("out/dump.vcd");
-     $dumpvars(0, test);
+    computer Comp(
+        .clk(clk),
+        .rst(rst),
+        .alu_out_bus(alu_out_bus),
+        .pc_out_bus(pc_out_bus),
+        .instruction_bus(instruction_bus),
+        .regA_out_bus(regA_out_bus),
+        .regB_out_bus(regB_out_bus),
+        .data_memory_out_bus(data_memory_out_bus),
+        .zero_flag(zero_flag),
+        .carry_flag(carry_flag),
+        .negative_flag(negative_flag),
+        .last_opcode(last_opcode)
+    );
 
-     $readmemb("im.dat", Comp.IM.mem);
+    initial begin
+        $dumpfile("out/dump.vcd");
+        $dumpvars(0, test);
 
-     $display("mem[0] = %h", Comp.IM.mem[0]);
-     $display("mem[1] = %h", Comp.IM.mem[1]);
-     $display("mem[2] = %h", Comp.IM.mem[2]);
-     $display("mem[3] = %h", Comp.IM.mem[3]);
+        $readmemb("im.dat", Comp.IM.mem);
+        $readmemb("mem.dat", Comp.DM.mem);
 
-     $monitor("At time %t, pc = 0x%h, im = b%b, regA = 0x%h, regB = 0x%h, alu=0x%h (b=0x%h)",
-              $time, Comp.pc_out_bus, Comp.im_out_bus, Comp.regA_out_bus, Comp.regB_out_bus, alu_out_bus,
-              Comp.im_out_bus[3:0]);
+        repeat (2) @(posedge clk);
+        rst = 0;
 
-     wait (Comp.PC.pc == 3);
-     #2;
-     $finish;
-   end
+        repeat (30) @(posedge clk);
 
-   always #1 cl = ~cl;
+        $display("Final A: 0x%0h", regA_out_bus);
+        $display("Final B: 0x%0h", regB_out_bus);
+        $display("Zero flag: %b, Carry flag: %b, Negative flag: %b", zero_flag, carry_flag, negative_flag);
+        $display("Last opcode: 0x%0h", last_opcode);
+
+        if (regA_out_bus !== 8'h81) begin
+            $fatal(1, "Unexpected value for register A: 0x%0h", regA_out_bus);
+        end
+        if (regB_out_bus !== 8'h7E) begin
+            $fatal(1, "Unexpected value for register B: 0x%0h", regB_out_bus);
+        end
+        if (last_opcode !== 8'h12) begin
+            $fatal(1, "Unexpected last opcode: 0x%0h", last_opcode);
+        end
+        if (zero_flag !== 1'b0) begin
+            $fatal(1, "Unexpected zero flag: %b", zero_flag);
+        end
+        if (negative_flag !== 1'b1) begin
+            $fatal(1, "Unexpected negative flag: %b", negative_flag);
+        end
+
+        $display("Simulation completed successfully.");
+        $finish;
+    end
+
+    always #1 clk = ~clk;
 endmodule

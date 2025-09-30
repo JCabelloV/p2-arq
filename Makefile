@@ -1,5 +1,16 @@
 # Archivos del proyecto
-VERILOG_FILES = computer.v # EJERCICIO: Rellenar los archivos verilog
+VERILOG_FILES = \
+        alu.v \
+        control_unit.v \
+        data_memory.v \
+        instruction_memory.v \
+        mux_a.v \
+        mux_b.v \
+        mux_data.v \
+        pc.v \
+        register.v \
+        status_register.v \
+        computer.v
 TESTBENCH_FILE = testbench.v
 YOSYS_SCRIPT = yosys.tcl
 
@@ -22,7 +33,7 @@ build: $(OUT_DIR)
 	@echo "Construcción exitosa. Ejecutable creado en $(OUT_DIR)/$(OUT_FILE)"
 
 # Target para ejecutar la simulación
-run:
+run: build
 	@echo "Ejecutando simulación..."
 	vvp $(OUT_DIR)/$(OUT_FILE)
 
